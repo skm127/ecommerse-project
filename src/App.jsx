@@ -9,6 +9,8 @@ import HomePage from './pages/HomePage';
 import CartPage from './pages/CartPage';
 import ProductPage from './pages/ProductPage';
 import LoginPage from './pages/LoginPage';
+import CheckoutPage from './pages/CheckoutPage';
+import OrderTrackingPage from './pages/OrderTrackingPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 function ScrollToTop() {
@@ -34,6 +36,8 @@ function App() {
                   <Route path="/cart" element={<CartPage />} />
                   <Route path="/product/:id" element={<ProductPage />} />
                   <Route path="/login" element={<LoginPage />} />
+                  <Route path="/checkout" element={<CheckoutPage />} />
+                  <Route path="/tracking" element={<OrderTrackingPage />} />
                   <Route path="*" element={<NotFoundPage />} />
                 </Routes>
               </main>

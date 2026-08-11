@@ -5,13 +5,11 @@ const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
-  // Lazily initialize from localStorage with safe parsing
   const [user, setUser] = useState(() => {
     try {
       const saved = JSON.parse(localStorage.getItem('shophub_user'));
       return saved && typeof saved === 'object' ? saved : null;
     } catch (error) {
-      // Corrupted or unreadable user data — reset to null
       console.error('Failed to load user from localStorage:', error);
       return null;
     }
@@ -29,8 +27,40 @@ export const AuthProvider = ({ children }) => {
     }
   }, [user]);
 
-  const login = (email, name) => {
-    setUser({ email, name });
+  const login = async (username, password) => {
+    try {
+      const response = await fetch('https://dummyjson.com/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username,
+          password,
+          expiresInMins: 60,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Login failed');
+      }
+
+      const data = await response.json();
+      
+      // Store the essential user info and token
+      setUser({
+        id: data.id,
+        username: data.username,
+        name: `${data.firstName} ${data.lastName}`,
+        email: data.email,
+        image: data.image,
+        accessToken: data.accessToken,
+      });
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Login error:', error);
+      return { success: false, error: error.message };
+    }
   };
 
   const logout = () => {
@@ -43,4 +73,3 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
-

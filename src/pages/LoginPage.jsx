@@ -6,25 +6,38 @@ import { motion } from 'framer-motion';
 
 function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  const [username, setUsername] = useState('emilys'); // Pre-fill with a valid dummy user
+  const [password, setPassword] = useState('emilyspass');
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   const { login } = useAuth();
   const navigate = useNavigate();
   const showToast = useToast();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setErrorMsg('');
 
-    setTimeout(() => {
-      login({ email, name: isLogin ? 'User' : name });
-      showToast(`Successfully ${isLogin ? 'logged in' : 'registered'}!`);
+    if (isLogin) {
+      const result = await login(username, password);
       setLoading(false);
-      navigate('/');
-    }, 1200);
+      
+      if (result.success) {
+        showToast('Successfully logged in!');
+        navigate('/');
+      } else {
+        setErrorMsg(result.error || 'Invalid credentials.');
+      }
+    } else {
+      // DummyJSON doesn't actually register users, so we mock registration success
+      setTimeout(() => {
+        showToast('Registration simulation complete! Please login.');
+        setIsLogin(true);
+        setLoading(false);
+      }, 1000);
+    }
   };
 
   return (
@@ -44,31 +57,24 @@ function LoginPage() {
           </h2>
           <p className="text-sm text-white/40">
             {isLogin
-              ? 'Enter your details to access your account.'
-              : 'Join us to enjoy a premium shopping experience.'}
+              ? 'Hint: use emilys / emilyspass to test login.'
+              : 'Registration is simulated for this demo.'}
           </p>
         </div>
 
+        {errorMsg && (
+          <div className="bg-red-500/10 border border-red-500/50 text-red-400 p-4 rounded-sm mb-6 text-sm text-center">
+            {errorMsg}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6">
-          {!isLogin && (
-            <div>
-              <input
-                type="text"
-                placeholder="Full Name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                className="w-full bg-transparent border-b border-white/10 px-0 py-3 text-white placeholder-white/30 focus:outline-none focus:border-white transition-colors"
-              />
-            </div>
-          )}
-          
           <div>
             <input
-              type="email"
-              placeholder="Email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              placeholder="Username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               required
               className="w-full bg-transparent border-b border-white/10 px-0 py-3 text-white placeholder-white/30 focus:outline-none focus:border-white transition-colors"
             />
