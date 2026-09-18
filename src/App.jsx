@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Outlet, useLocation } from 'react-router-dom';
 import { CartProvider } from './context/CartContext';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './components/Toast';
@@ -28,6 +28,19 @@ function ScrollToTop() {
   return null;
 }
 
+// Storefront Layout wrapper — Header + Footer + child page
+function StorefrontLayout() {
+  return (
+    <div className="min-h-screen bg-primary text-gray-100 flex flex-col">
+      <Header />
+      <main className="flex-1">
+        <Outlet />
+      </main>
+      <Footer />
+    </div>
+  );
+}
+
 function App() {
   return (
     <BrowserRouter>
@@ -36,25 +49,17 @@ function App() {
           <ToastProvider>
             <ScrollToTop />
             <Routes>
-              {/* Customer Storefront */}
-              <Route path="/" element={
-                <div className="min-h-screen bg-primary text-gray-100 flex flex-col">
-                  <Header />
-                  <main className="flex-1">
-                    <Routes>
-                      <Route index element={<HomePage />} />
-                      <Route path="cart" element={<CartPage />} />
-                      <Route path="product/:id" element={<ProductPage />} />
-                      <Route path="login" element={<LoginPage />} />
-                      <Route path="checkout" element={<CheckoutPage />} />
-                      <Route path="tracking" element={<OrderTrackingPage />} />
-                    </Routes>
-                  </main>
-                  <Footer />
-                </div>
-              } />
+              {/* ── Customer Storefront ── */}
+              <Route element={<StorefrontLayout />}>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/cart" element={<CartPage />} />
+                <Route path="/product/:id" element={<ProductPage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/checkout" element={<CheckoutPage />} />
+                <Route path="/tracking" element={<OrderTrackingPage />} />
+              </Route>
 
-              {/* Admin Panel */}
+              {/* ── Admin Panel ── */}
               <Route path="/admin" element={<AdminLayout />}>
                 <Route index element={<DashboardPage />} />
                 <Route path="products" element={<ProductsPage />} />
@@ -62,6 +67,7 @@ function App() {
                 <Route path="bills" element={<BillsHistoryPage />} />
               </Route>
 
+              {/* 404 */}
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </ToastProvider>
