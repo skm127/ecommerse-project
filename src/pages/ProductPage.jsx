@@ -19,24 +19,22 @@ function ProductPage() {
   const [activeTab, setActiveTab] = useState('Description');
 
   useEffect(() => {
-    setLoading(true);
-    setError(false);
     setQuantity(1);
     setActiveTab('Description');
 
-    // Read from shared localStorage DB
-    const found = getProductById(id);
-    if (found) {
-      setProduct(found);
-      const related = getProducts()
-        .filter(p => p.category === found.category && String(p.id) !== String(id))
-        .slice(0, 4);
-      setRelatedProducts(related);
+    const load = async () => {
+      setLoading(true);
+      setError(false);
+      const prod = await getProductById(id);
+      if (prod) {
+        setProduct(prod);
+        setRelatedProducts(prod.related || []);
+      } else {
+        setError(true);
+      }
       setLoading(false);
-    } else {
-      setError(true);
-      setLoading(false);
-    }
+    };
+    load();
   }, [id]);
 
   if (loading) {

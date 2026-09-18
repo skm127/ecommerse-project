@@ -4,7 +4,7 @@ import { useToast } from '../components/Toast';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingBag, ArrowRight, Star } from 'lucide-react';
-import { getProducts, seedFromAPI } from '../lib/productsDB';
+import { getProducts } from '../lib/productsDB';
 import { TiltCard, Marquee, SpotlightHero, ProductSkeleton } from '../components/ui';
 
 const MARQUEE_ITEMS = [
@@ -42,7 +42,7 @@ function ProductCard({ product, index }) {
           <div className="relative overflow-hidden rounded-lg mb-4 aspect-square bg-secondary border border-white/5 group">
             {/* Category pill */}
             <span className="absolute top-3 left-3 z-10 text-[9px] uppercase tracking-widest text-white/60 bg-black/40 backdrop-blur-md px-2 py-1 rounded-sm border border-white/10 capitalize">
-              {product.category?.replace(/-/g, ' ')}
+              {product.category_name || product.category?.replace(/-/g, ' ')}
             </span>
 
             {/* Out of stock badge */}
@@ -139,10 +139,9 @@ function HomePage() {
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      const data = await seedFromAPI();
-      const all = data.length > 0 ? data : getProducts();
+      const all = await getProducts({ limit: 100 });
       setProducts(all);
-      setCategories(['All', ...new Set(all.map(p => p.category))]);
+      setCategories(['All', ...new Set(all.map(p => p.category_name || p.category))]);
       setLoading(false);
     };
     load();

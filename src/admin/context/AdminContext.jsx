@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getProducts, saveProducts, seedFromAPI, generateId } from '../../lib/productsDB';
+import { getProducts } from '../../lib/productsDB';
 
 const AdminContext = createContext();
 export const useAdmin = () => useContext(AdminContext);
@@ -16,36 +16,20 @@ const saveBills = (bills) => {
   catch (e) { console.error('Storage error:', e); }
 };
 
-// Notify storefront of product changes so it can re-render
-const notifyStorefront = () => {
-  window.dispatchEvent(new Event('admin_products_updated'));
-};
-
 export const AdminProvider = ({ children }) => {
-  const [products, setProducts] = useState(() => getProducts());
+  const [products, setProducts] = useState([]);
   const [bills, setBills] = useState(() => loadBills());
   const [seeding, setSeeding] = useState(false);
 
-  // Seed on first load if needed
   useEffect(() => {
-    if (products.length === 0) {
+    const load = async () => {
       setSeeding(true);
-      seedFromAPI().then(seeded => {
-        if (seeded.length > 0) {
-          setProducts(seeded);
-        }
-        setSeeding(false);
-      });
-    }
+      const all = await getProducts({ limit: 100 });
+      setProducts(all);
+      setSeeding(false);
+    };
+    load();
   }, []);
-
-  // Persist products and notify storefront on every change
-  useEffect(() => {
-    if (products.length > 0) {
-      saveProducts(products);
-      notifyStorefront();
-    }
-  }, [products]);
 
   // Persist bills
   useEffect(() => {
