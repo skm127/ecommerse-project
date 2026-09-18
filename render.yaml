@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: skm-cart-api
+    env: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        value: r82pqvhb
+      - key: CLOUDINARY_API_KEY
+        value: "895742547915185"
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: FRONTEND_URL
+        value: https://ecommerse-project.vercel.app
+
