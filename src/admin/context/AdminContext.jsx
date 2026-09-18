@@ -1,78 +1,69 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { getProducts, saveProducts, seedFromAPI, generateId } from '../../lib/productsDB';
 
 const AdminContext = createContext();
 export const useAdmin = () => useContext(AdminContext);
 
-// --- Helper to generate a UUID without the `uuid` package ---
-const generateId = () => {
-  return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+const loadBills = () => {
+  try {
+    const data = localStorage.getItem('admin_bills');
+    return data ? JSON.parse(data) : [];
+  } catch { return []; }
 };
 
-const loadFromStorage = (key, fallback) => {
-  try {
-    const data = localStorage.getItem(key);
-    return data ? JSON.parse(data) : fallback;
-  } catch {
-    return fallback;
-  }
+const saveBills = (bills) => {
+  try { localStorage.setItem('admin_bills', JSON.stringify(bills)); }
+  catch (e) { console.error('Storage error:', e); }
 };
 
-const saveToStorage = (key, data) => {
-  try {
-    localStorage.setItem(key, JSON.stringify(data));
-  } catch (e) {
-    console.error('Storage error:', e);
-  }
+// Notify storefront of product changes so it can re-render
+const notifyStorefront = () => {
+  window.dispatchEvent(new Event('admin_products_updated'));
 };
 
 export const AdminProvider = ({ children }) => {
-  const [products, setProducts] = useState(() => loadFromStorage('admin_products', []));
-  const [bills, setBills] = useState(() => loadFromStorage('admin_bills', []));
-  const [seeded, setSeeded] = useState(() => !!localStorage.getItem('admin_seeded'));
+  const [products, setProducts] = useState(() => getProducts());
+  const [bills, setBills] = useState(() => loadBills());
+  const [seeding, setSeeding] = useState(false);
 
-  // Seed products from DummyJSON on first load
+  // Seed on first load if needed
   useEffect(() => {
-    if (!seeded) {
-      fetch('https://dummyjson.com/products?limit=30')
-        .then(res => res.json())
-        .then(data => {
-          const seededProducts = data.products.map(p => ({
-            id: generateId(),
-            name: p.title,
-            category: p.category,
-            price: p.price,
-            stock: p.stock || Math.floor(Math.random() * 100) + 10,
-            thumbnail: p.thumbnail,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            stockAudit: [],
-          }));
-          setProducts(seededProducts);
-          saveToStorage('admin_products', seededProducts);
-          localStorage.setItem('admin_seeded', 'true');
-          setSeeded(true);
-        })
-        .catch(() => {});
+    if (products.length === 0) {
+      setSeeding(true);
+      seedFromAPI().then(seeded => {
+        if (seeded.length > 0) {
+          setProducts(seeded);
+        }
+        setSeeding(false);
+      });
     }
-  }, [seeded]);
+  }, []);
 
-  // Persist products whenever they change
+  // Persist products and notify storefront on every change
   useEffect(() => {
-    saveToStorage('admin_products', products);
+    if (products.length > 0) {
+      saveProducts(products);
+      notifyStorefront();
+    }
   }, [products]);
 
-  // Persist bills whenever they change
+  // Persist bills
   useEffect(() => {
-    saveToStorage('admin_bills', bills);
+    saveBills(bills);
   }, [bills]);
 
   // --- Product CRUD ---
   const addProduct = (productData) => {
     const newProduct = {
       id: generateId(),
-      ...productData,
+      name: productData.name,
+      title: productData.name,
+      category: productData.category,
       price: Number(productData.price),
       stock: Number(productData.stock),
+      thumbnail: productData.thumbnail || '',
+      images: productData.thumbnail ? [productData.thumbnail] : [],
+      description: productData.description || '',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       stockAudit: [{ action: 'Initial Stock', delta: Number(productData.stock), timestamp: new Date().toISOString() }],
@@ -83,7 +74,15 @@ export const AdminProvider = ({ children }) => {
   const updateProduct = (id, updates) => {
     setProducts(prev => prev.map(p =>
       p.id === id
-        ? { ...p, ...updates, price: Number(updates.price || p.price), updatedAt: new Date().toISOString() }
+        ? {
+            ...p,
+            ...updates,
+            name: updates.name || p.name,
+            title: updates.name || p.title,
+            price: Number(updates.price || p.price),
+            stock: updates.stock !== undefined ? Number(updates.stock) : p.stock,
+            updatedAt: new Date().toISOString(),
+          }
         : p
     ));
   };
@@ -103,7 +102,7 @@ export const AdminProvider = ({ children }) => {
         stockAudit: [
           { action: reason, delta, newStock, timestamp: new Date().toISOString() },
           ...(p.stockAudit || []),
-        ].slice(0, 20), // Keep last 20 audit entries
+        ].slice(0, 20),
       };
     }));
   };
@@ -121,7 +120,7 @@ export const AdminProvider = ({ children }) => {
 
     // Reduce stock for each item in the bill
     billData.items.forEach(item => {
-      adjustStock(item.productId, -item.quantity, `Sold (Bill #${newBill.id})`);
+      adjustStock(item.productId, -item.quantity, `Sold — Bill #${newBill.id}`);
     });
 
     return newBill;
@@ -145,6 +144,7 @@ export const AdminProvider = ({ children }) => {
       products,
       bills,
       stats,
+      seeding,
       addProduct,
       updateProduct,
       deleteProduct,
