@@ -60,10 +60,10 @@ function Header() {
 
   return (
     <header
-      className={`sticky top-0 z-50 transition-all duration-500 border-b ${
+      className={`sticky top-0 z-50 transition-all duration-500 ${
         scrolled
-          ? 'bg-primary/70 backdrop-blur-xl border-white/5 shadow-sm'
-          : 'bg-transparent border-transparent'
+          ? 'bg-[#09090b]/80 backdrop-blur-2xl border-b border-white/[0.06] shadow-[0_1px_0_rgba(255,255,255,0.04)]'
+          : 'bg-transparent border-b border-transparent'
       }`}
     >
       <div className="container mx-auto px-6 py-4 flex justify-between items-center">
